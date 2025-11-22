@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/drag-drop-touch/1.3.0/DragDropTouch.min.js"></script>
   <meta charset="UTF-8" />
-  <title>Priority Survey</title>
+  <title>Newspaper Archive Relaunch  Priority Survey</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
@@ -41,8 +42,8 @@
       margin-bottom: 0.5rem;
     }
     .concepts {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 0.5rem;
       margin-bottom: 1.5rem;
     }
@@ -55,6 +56,10 @@
       cursor: grab;
       user-select: none;
       transition: box-shadow 0.15s ease, transform 0.15s ease, background 0.15s ease;
+    }
+    #concepts .concept {
+      width: 100%;
+      box-sizing: border-box;
     }
     .concept.dragging {
       opacity: 0.7;
