@@ -66,7 +66,7 @@
       font-size: 0.85rem;
       cursor: grab;
       user-select: none;
-      transition: box-shadow 0.15s ease, transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+      transition: box-shadow 0.15s ease, transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
     /* Full-width pills in the top Items grid */
     #concepts .concept {
@@ -81,8 +81,8 @@
     }
     .concept.assigned {
       border-color: rgb(186, 62, 56);
-      background: rgba(186, 62, 56, 0.5);
-      color: #ffffff;
+      background: rgba(186, 62, 56, 0.2);
+      color: #111827;
     }
 
     /* Buckets */
@@ -152,20 +152,26 @@
       display: flex;
       flex-wrap: wrap;
       gap: 0.8rem;
-      align-items: center;
+      align-items: flex-start;
     }
     .field {
       flex: 1;
-      min-width: 220px;
+      min-width: 260px;
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.4rem;
     }
     .field label {
       font-size: 0.85rem;
       font-weight: 500;
     }
+    .field-inline {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
     .field input[type="email"] {
+      flex: 1;
       padding: 0.5rem 0.6rem;
       border-radius: 0.5rem;
       border: 1px solid #d1d5db;
@@ -197,6 +203,7 @@
       justify-content: center;
       gap: 0.4rem;
       transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      white-space: nowrap;
     }
     button:disabled {
       cursor: not-allowed;
@@ -274,9 +281,10 @@
       color: #111827;
     }
     .sheet-option-check {
-      font-size: 0.9rem;
+      font-size: 1.2rem;
+      font-weight: 600;
       opacity: 0;
-      width: 1.5rem;
+      width: 1.8rem;
       text-align: center;
       margin-right: 0.4rem;
     }
@@ -304,9 +312,9 @@
     }
 
     @media (max-width: 767px) {
-      /* Bigger tap targets for items on mobile */
+      /* Bigger tap targets for items on mobile (roughly 2x original height) */
       .concept {
-        padding: 0.7rem 1rem;
+        padding: 0.9rem 1.1rem;
       }
       /* Bottom sheet font + padding slightly larger on mobile */
       .sheet-title {
@@ -384,13 +392,13 @@
       <div class="form-row">
         <div class="field">
           <label for="email">Your email</label>
-          <input type="email" id="email" name="email" placeholder="you@example.com" required />
+          <div class="field-inline">
+            <input type="email" id="email" name="email" placeholder="you@example.com" required />
+            <button id="submitButton" type="submit" disabled>
+              Submit
+            </button>
+          </div>
           <div id="emailError" class="error-text"></div>
-        </div>
-        <div>
-          <button id="submitButton" type="submit" disabled>
-            Submit
-          </button>
         </div>
       </div>
       <div id="status" class="status"></div>
@@ -404,19 +412,19 @@
       <div class="sheet-title">Set priority</div>
       <div class="sheet-options">
         <button type="button" class="sheet-option" data-priority="high">
-          <span class="sheet-option-check">✓</span>
+          <span class="sheet-option-check">✔</span>
           <span class="sheet-option-label">High priority</span>
         </button>
         <button type="button" class="sheet-option" data-priority="medium">
-          <span class="sheet-option-check">✓</span>
+          <span class="sheet-option-check">✔</span>
           <span class="sheet-option-label">Medium priority</span>
         </button>
         <button type="button" class="sheet-option" data-priority="low">
-          <span class="sheet-option-check">✓</span>
+          <span class="sheet-option-check">✔</span>
           <span class="sheet-option-label">Low priority</span>
         </button>
         <button type="button" class="sheet-option" data-priority="none">
-          <span class="sheet-option-check">✓</span>
+          <span class="sheet-option-check">✔</span>
           <span class="sheet-option-label">Priority not set</span>
         </button>
       </div>
@@ -547,7 +555,7 @@
         const { wrapper, counter } = getBucketElements(bucketId);
         const count = buckets[bucketId].length;
         const remaining = MAX_PER_BUCKET - count;
-        counter.textContent = `${count}/${MAX_PER_BUCKET} used · ${remaining} left`;
+        counter.textContent = `${count}/${MAX_PER_BUCKET}`;
         wrapper.classList.toggle("empty", count === 0);
         wrapper.classList.toggle("drop-target-full", remaining === 0);
       });
