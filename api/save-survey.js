@@ -1,34 +1,6 @@
-const fs = require("fs");
-const path = require("path");
+const { google } = require("googleapis");
 
 const MAX_PER_BUCKET = 5;
-
-// On Vercel, only /tmp is writable inside a serverless function
-const RESULTS_DIR = "/tmp";
-const RESULTS_FILE = path.join(RESULTS_DIR, "survey-results.csv");
-
-function ensureCsvHeader() {
-  if (!fs.existsSync(RESULTS_DIR)) {
-    fs.mkdirSync(RESULTS_DIR, { recursive: true });
-  }
-
-  if (fs.existsSync(RESULTS_FILE)) return;
-
-  const headers = [
-    "timestamp_iso",
-    "email",
-    ...Array.from({ length: MAX_PER_BUCKET }, (_, i) => `high_${i + 1}`),
-    ...Array.from({ length: MAX_PER_BUCKET }, (_, i) => `medium_${i + 1}`),
-    ...Array.from({ length: MAX_PER_BUCKET }, (_, i) => `low_${i + 1}`)
-  ];
-  fs.writeFileSync(RESULTS_FILE, headers.join(",") + "\n", "utf8");
-}
-
-function csvEscape(value) {
-  if (value == null) return "";
-  const str = String(value);
-  return `"${str.replace(/"/g, '""')}"`;
-}
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -54,6 +26,29 @@ function readJsonBody(req) {
       reject(err);
     });
   });
+}
+
+async function getSheetsClient() {
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const key = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY;
+
+  if (!email || !key) {
+    throw new Error("Google service account env vars are missing");
+  }
+
+  // Handle escaped newlines in env var
+  const privateKey = key.replace(/\\n/g, "\n");
+
+  const auth = new google.auth.JWT(
+    email,
+    null,
+    privateKey,
+    ["https://www.googleapis.com/auth/spreadsheets"]
+  );
+
+  await auth.authorize();
+
+  return google.sheets({ version: "v4", auth });
 }
 
 module.exports = async (req, res) => {
@@ -86,26 +81,37 @@ module.exports = async (req, res) => {
   }
 
   try {
-    ensureCsvHeader();
+    const sheets = await getSheetsClient();
+    const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+
+    if (!spreadsheetId) {
+      throw new Error("GOOGLE_SHEETS_SPREADSHEET_ID is not set");
+    }
 
     const timestamp = new Date().toISOString();
-    const rowFields = [
+    const row = [
       timestamp,
       email,
       ...high,
       ...medium,
       ...low
-    ].map(csvEscape);
+    ];
 
-    // Write to /tmp CSV
-    fs.appendFileSync(RESULTS_FILE, rowFields.join(",") + "\n", "utf8");
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      // If your tab is not named "Sheet1", change it here (e.g. "Data!A:Z")
+      range: "Sheet1!A:Z",
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [row]
+      }
+    });
 
-    // Also log the row so you can see it in Vercel logs
-    console.log("SURVEY_ROW", rowFields.join(","));
+    console.log("Added row to Google Sheet:", row);
 
     return res.status(200).json({ status: "ok" });
   } catch (err) {
-    console.error("Error writing CSV:", err);
+    console.error("Error writing to Google Sheets:", err);
     return res.status(500).json({ error: "Failed to save" });
   }
 };
