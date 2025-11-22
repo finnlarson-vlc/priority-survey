@@ -2,9 +2,16 @@ const fs = require("fs");
 const path = require("path");
 
 const MAX_PER_BUCKET = 5;
-const RESULTS_FILE = path.join(process.cwd(), "survey-results.csv");
+
+// On Vercel, only /tmp is writable inside a serverless function
+const RESULTS_DIR = "/tmp";
+const RESULTS_FILE = path.join(RESULTS_DIR, "survey-results.csv");
 
 function ensureCsvHeader() {
+  if (!fs.existsSync(RESULTS_DIR)) {
+    fs.mkdirSync(RESULTS_DIR, { recursive: true });
+  }
+
   if (fs.existsSync(RESULTS_FILE)) return;
 
   const headers = [
@@ -90,7 +97,11 @@ module.exports = async (req, res) => {
       ...low
     ].map(csvEscape);
 
+    // Write to /tmp CSV
     fs.appendFileSync(RESULTS_FILE, rowFields.join(",") + "\n", "utf8");
+
+    // Also log the row so you can see it in Vercel logs
+    console.log("SURVEY_ROW", rowFields.join(","));
 
     return res.status(200).json({ status: "ok" });
   } catch (err) {
