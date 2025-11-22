@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Priority Survey</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f7;
+      color: #111827;
+    }
+    body {
+      margin: 0;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      background: #ffffff;
+      border-radius: 1rem;
+      padding: 1.5rem 1.8rem 2rem;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+      box-sizing: border-box;
+    }
+    h1 {
+      margin: 0 0 0.25rem;
+      font-size: 1.75rem;
+    }
+    .subheading {
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      color: #4b5563;
+    }
+
+    /* Concepts row */
+    .concepts-header {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .concepts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .concept {
+      padding: 0.45rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      background: #f9fafb;
+      font-size: 0.85rem;
+      cursor: grab;
+      user-select: none;
+      transition: box-shadow 0.15s ease, transform 0.15s ease, background 0.15s ease;
+    }
+    .concept.dragging {
+      opacity: 0.7;
+      transform: scale(1.03);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.22);
+      background: #e5f2ff;
+    }
+    .concept.assigned {
+      background: #e5f0ff;
+      border-color: #a5b4fc;
+    }
+
+    /* Buckets */
+    .buckets {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .bucket {
+      background: #f9fafb;
+      border-radius: 0.9rem;
+      border: 1px solid #e5e7eb;
+      min-height: 180px;
+      padding: 0.75rem 0.75rem 0.9rem;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    }
+    .bucket-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.3rem;
+    }
+    .bucket-title {
+      font-weight: 600;
+    }
+    .bucket-high  .bucket-title { color: #b91c1c; }
+    .bucket-medium .bucket-title { color: #b45309; }
+    .bucket-low .bucket-title { color: #065f46; }
+
+    .bucket-subtitle {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+    .bucket-counter {
+      font-size: 0.75rem;
+      color: #4b5563;
+    }
+    .bucket-items {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding-top: 0.25rem;
+    }
+    .bucket.empty .bucket-items::before {
+      content: "Arrastra aquí tus opciones…";
+      font-size: 0.8rem;
+      color: #9ca3af;
+      font-style: italic;
+    }
+    .bucket.drop-target-valid {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 1px #bfdbfe;
+      transform: translateY(-1px);
+    }
+    .bucket.drop-target-full {
+      border-color: #fecaca;
+      box-shadow: 0 0 0 1px #fee2e2;
+    }
+
+    /* Email + submit */
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      align-items: center;
+    }
+    .field {
+      flex: 1;
+      min-width: 220px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .field label {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .field input[type="email"] {
+      padding: 0.5rem 0.6rem;
+      border-radius: 0.5rem;
+      border: 1px solid #d1d5db;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .field input[type="email"]:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 1px #bfdbfe;
+    }
+    .error-text {
+      font-size: 0.75rem;
+      color: #b91c1c;
+      min-height: 1em;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.6rem 1.4rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #111827;
+      color: #f9fafb;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+      box-shadow: none;
+    }
+    button:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.16);
+      background: #020617;
+    }
+
+    .status {
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      min-height: 1.2em;
+    }
+    .status.success {
+      color: #166534;
+    }
+    .status.error {
+      color: #b91c1c;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 0.75rem;
+      }
+      .container {
+        padding: 1.1rem 1rem 1.35rem;
+        border-radius: 0.75rem;
+      }
+      h1 {
+        font-size: 1.4rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Priority Survey</h1>
+    <p class="subheading">
+      Arrastra cada concepto a una de las categorías: Alta, Media o Baja prioridad.
+      Cada categoría debe tener exactamente <strong>5</strong> conceptos.
+    </p>
+
+    <div class="concepts-header">Conceptos:</div>
+    <div id="concepts" class="concepts">
+      <!-- Concepts generated by JS -->
+    </div>
+
+    <div class="buckets">
+      <div class="bucket bucket-high empty" data-bucket-id="high">
+        <div class="bucket-header">
+          <div>
+            <div class="bucket-title">Alta prioridad</div>
+            <div class="bucket-subtitle">Lo más importante / urgente</div>
+          </div>
+          <div class="bucket-counter" data-counter="high"></div>
+        </div>
+        <div class="bucket-items" data-bucket-items="high"></div>
+      </div>
+
+      <div class="bucket bucket-medium empty" data-bucket-id="medium">
+        <div class="bucket-header">
+          <div>
+            <div class="bucket-title">Prioridad media</div>
+            <div class="bucket-subtitle">Importante pero no crítico</div>
+          </div>
+          <div class="bucket-counter" data-counter="medium"></div>
+        </div>
+        <div class="bucket-items" data-bucket-items="medium"></div>
+      </div>
+
+      <div class="bucket bucket-low empty" data-bucket-id="low">
+        <div class="bucket-header">
+          <div>
+            <div class="bucket-title">Baja prioridad</div>
+            <div class="bucket-subtitle">Puede esperar</div>
+          </div>
+          <div class="bucket-counter" data-counter="low"></div>
+        </div>
+        <div class="bucket-items" data-bucket-items="low"></div>
+      </div>
+    </div>
+
+    <form id="surveyForm" novalidate>
+      <div class="form-row">
+        <div class="field">
+          <label for="email">Tu email</label>
+          <input type="email" id="email" name="email" placeholder="tucorreo@ejemplo.com" required />
+          <div id="emailError" class="error-text"></div>
+        </div>
+        <div>
+          <button id="submitButton" type="submit" disabled>
+            Hecho
+            <span aria-hidden="true">✅</span>
+          </button>
+        </div>
+      </div>
+      <div id="status" class="status"></div>
+    </form>
+  </div>
+
+  <script>
+    // ---- Configuration: edit these 15 one-liners as you wish ----
+    const concepts = [
+      "Concept 1: Improve onboarding experience",
+      "Concept 2: Reduce response time",
+      "Concept 3: Add new analytics dashboard",
+      "Concept 4: Enhance mobile usability",
+      "Concept 5: Implement referral program",
+      "Concept 6: Improve documentation",
+      "Concept 7: Automate reporting",
+      "Concept 8: Simplify pricing plans",
+      "Concept 9: Localize for new markets",
+      "Concept 10: Improve accessibility",
+      "Concept 11: Add integrations with tools",
+      "Concept 12: Improve security audits",
+      "Concept 13: Launch customer community",
+      "Concept 14: Add in-app tutorials",
+      "Concept 15: Improve survey insights"
+    ].map((label, index) => ({
+      id: "concept-" + (index + 1),
+      label
+    }));
+
+    const MAX_PER_BUCKET = 5;
+    const buckets = {
+      high: [],
+      medium: [],
+      low: []
+    };
+    const conceptAssignments = {}; // conceptId -> bucketId | null
+
+    const conceptsContainer = document.getElementById("concepts");
+    const submitButton = document.getElementById("submitButton");
+    const emailInput = document.getElementById("email");
+    const emailError = document.getElementById("emailError");
+    const statusEl = document.getElementById("status");
+    const form = document.getElementById("surveyForm");
+
+    // ---- Create concept chips ----
+    function renderConcepts() {
+      conceptsContainer.innerHTML = "";
+      concepts.forEach((c) => {
+        const el = document.createElement("div");
+        el.className = "concept";
+        el.draggable = true;
+        el.textContent = c.label;
+        el.dataset.conceptId = c.id;
+        attachConceptDragEvents(el);
+        conceptsContainer.appendChild(el);
+      });
+    }
+
+    function attachConceptDragEvents(el) {
+      el.addEventListener("dragstart", (event) => {
+        event.dataTransfer.setData("text/plain", el.dataset.conceptId);
+        event.dataTransfer.effectAllowed = "move";
+        el.classList.add("dragging");
+      });
+      el.addEventListener("dragend", () => {
+        el.classList.remove("dragging");
+      });
+    }
+
+    // ---- Bucket logic ----
+    function getBucketElements(bucketId) {
+      return {
+        wrapper: document.querySelector(`.bucket[data-bucket-id="${bucketId}"]`),
+        itemsContainer: document.querySelector(`[data-bucket-items="${bucketId}"]`),
+        counter: document.querySelector(`[data-counter="${bucketId}"]`)
+      };
+    }
+
+    function updateBucketCounters() {
+      ["high", "medium", "low"].forEach((bucketId) => {
+        const { wrapper, itemsContainer, counter } = getBucketElements(bucketId);
+        const count = buckets[bucketId].length;
+        const remaining = MAX_PER_BUCKET - count;
+        counter.textContent = `${count}/${MAX_PER_BUCKET} usados · ${remaining} libres`;
+        wrapper.classList.toggle("empty", count === 0);
+        wrapper.classList.toggle("drop-target-full", remaining === 0);
+      });
+    }
+
+    function moveConceptToBucket(conceptId, targetBucketId) {
+      // Remove from previous bucket, if any
+      const prevBucketId = conceptAssignments[conceptId];
+      if (prevBucketId) {
+        buckets[prevBucketId] = buckets[prevBucketId].filter((id) => id !== conceptId);
+      }
+
+      // Add to new bucket
+      if (targetBucketId) {
+        buckets[targetBucketId].push(conceptId);
+      }
+
+      conceptAssignments[conceptId] = targetBucketId || null;
+      updateBucketCounters();
+      updateConceptVisuals();
+      updateSubmitState();
+    }
+
+    function updateConceptVisuals() {
+      // Mark assigned concepts
+      document.querySelectorAll(".concept").forEach((el) => {
+        const conceptId = el.dataset.conceptId;
+        el.classList.toggle("assigned", Boolean(conceptAssignments[conceptId]));
+      });
+
+      // Rebuild bucket DOM contents
+      ["high", "medium", "low"].forEach((bucketId) => {
+        const { itemsContainer } = getBucketElements(bucketId);
+        itemsContainer.innerHTML = "";
+        buckets[bucketId].forEach((conceptId) => {
+          const chip = document.querySelector(`.concept[data-concept-id="${conceptId}"]`);
+          if (chip) {
+            const cloned = chip.cloneNode(true);
+            cloned.classList.add("assigned"); // visual hint
+            cloned.draggable = true;
+            cloned.dataset.conceptId = conceptId;
+            attachConceptDragEvents(cloned);
+            itemsContainer.appendChild(cloned);
+          }
+        });
+      });
+    }
+
+    function setupBucketDropAreas() {
+      document.querySelectorAll(".bucket").forEach((bucketEl) => {
+        const bucketId = bucketEl.dataset.bucketId;
+
+        bucketEl.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          const count = buckets[bucketId].length;
+          if (count < MAX_PER_BUCKET) {
+            bucketEl.classList.add("drop-target-valid");
+            event.dataTransfer.dropEffect = "move";
+          } else {
+            event.dataTransfer.dropEffect = "none";
+          }
+        });
+
+        bucketEl.addEventListener("dragleave", () => {
+          bucketEl.classList.remove("drop-target-valid");
+        });
+
+        bucketEl.addEventListener("drop", (event) => {
+          event.preventDefault();
+          bucketEl.classList.remove("drop-target-valid");
+
+          const conceptId = event.dataTransfer.getData("text/plain");
+          if (!conceptId) return;
+
+          const currentCount = buckets[bucketId].length;
+          if (currentCount >= MAX_PER_BUCKET) {
+            // bucket full – ignore drop
+            return;
+          }
+
+          moveConceptToBucket(conceptId, bucketId);
+        });
+      });
+
+      // Allow dragging back to top area (unassign)
+      conceptsContainer.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+      });
+
+      conceptsContainer.addEventListener("drop", (event) => {
+        event.preventDefault();
+        const conceptId = event.dataTransfer.getData("text/plain");
+        if (!conceptId) return;
+        moveConceptToBucket(conceptId, null); // unassign
+      });
+    }
+
+    // ---- Email + validation ----
+    function isValidEmail(value) {
+      // simple but decent validation
+      if (!value) return false;
+      const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return pattern.test(value.trim());
+    }
+
+    function updateSubmitState() {
+      const allFull =
+        buckets.high.length === MAX_PER_BUCKET &&
+        buckets.medium.length === MAX_PER_BUCKET &&
+        buckets.low.length === MAX_PER_BUCKET;
+
+      const emailOk = isValidEmail(emailInput.value);
+      const enabled = allFull && emailOk;
+
+      submitButton.disabled = !enabled;
+
+      if (!emailInput.value) {
+        emailError.textContent = "";
+      } else if (!emailOk) {
+        emailError.textContent = "Por favor, introduce un email válido.";
+      } else {
+        emailError.textContent = "";
+      }
+    }
+
+    emailInput.addEventListener("input", () => {
+      updateSubmitState();
+    });
+
+    // ---- Form submission ----
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      statusEl.textContent = "";
+      statusEl.className = "status";
+
+      const email = emailInput.value.trim();
+      if (!isValidEmail(email)) {
+        emailError.textContent = "Por favor, introduce un email válido.";
+        updateSubmitState();
+        return;
+      }
+
+      if (
+        buckets.high.length !== MAX_PER_BUCKET ||
+        buckets.medium.length !== MAX_PER_BUCKET ||
+        buckets.low.length !== MAX_PER_BUCKET
+      ) {
+        statusEl.textContent =
+          "Cada categoría debe tener exactamente " + MAX_PER_BUCKET + " conceptos.";
+        statusEl.classList.add("error");
+        return;
+      }
+
+      const idToLabel = Object.fromEntries(concepts.map((c) => [c.id, c.label]));
+      const payload = {
+        email,
+        high: buckets.high.map((id) => idToLabel[id]),
+        medium: buckets.medium.map((id) => idToLabel[id]),
+        low: buckets.low.map((id) => idToLabel[id])
+      };
+
+      try {
+        const response = await fetch("/api/save-survey", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error("Respuesta no válida del servidor");
+        }
+
+        statusEl.textContent = "¡Gracias! Tus respuestas se han guardado.";
+        statusEl.classList.add("success");
+        submitButton.disabled = true;
+        submitButton.textContent = "Enviado";
+      } catch (err) {
+        console.error(err);
+        statusEl.textContent =
+          "Ha ocurrido un error al guardar las respuestas. Inténtalo de nuevo más tarde.";
+        statusEl.classList.add("error");
+      }
+    });
+
+    // ---- Init ----
+    renderConcepts();
+    setupBucketDropAreas();
+    updateBucketCounters();
+    updateSubmitState();
+  </script>
+</body>
+</html>
+Add index.html
