@@ -23,13 +23,47 @@ function csvEscape(value) {
   return `"${str.replace(/"/g, '""')}"`;
 }
 
-module.exports = (req, res) => {
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = "";
+
+    req.on("data", (chunk) => {
+      data += chunk;
+    });
+
+    req.on("end", () => {
+      if (!data) {
+        return resolve({});
+      }
+      try {
+        const json = JSON.parse(data);
+        resolve(json);
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    req.on("error", (err) => {
+      reject(err);
+    });
+  });
+}
+
+module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { email, high, medium, low } = req.body || {};
+  let body;
+  try {
+    body = await readJsonBody(req);
+  } catch (err) {
+    console.error("Invalid JSON body:", err);
+    return res.status(400).json({ error: "Invalid JSON body" });
+  }
+
+  const { email, high, medium, low } = body || {};
 
   if (!email || typeof email !== "string") {
     return res.status(400).json({ error: "Email is required" });
