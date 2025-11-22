@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Newspaper Archive 2026 Relaunch Priority Survey</title>
+  <title>Priority Survey</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
@@ -15,6 +15,9 @@
       padding: 1.5rem;
       display: flex;
       justify-content: center;
+    }
+    body.no-scroll {
+      overflow: hidden;
     }
     .container {
       width: 100%;
@@ -223,9 +226,9 @@
     .sheet {
       width: 100%;
       max-width: 480px;
-      background: #ffffff;
+      background: #f9fafb;
       border-radius: 1rem 1rem 0 0;
-      padding: 0.75rem 1rem 1rem;
+      padding: 0.9rem 1.1rem 1.2rem;
       box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.35);
     }
     .sheet-handle {
@@ -236,10 +239,11 @@
       margin: 0 auto 0.75rem;
     }
     .sheet-title {
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 600;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
       text-align: center;
+      color: #111827;
     }
     .sheet-options {
       display: flex;
@@ -252,13 +256,15 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.55rem 0.25rem;
-      font-size: 0.95rem;
+      padding: 0.6rem 0.25rem;
+      font-size: 1rem;
       text-align: left;
       cursor: pointer;
+      color: #111827;
     }
     .sheet-option-label {
       flex: 1;
+      color: #111827;
     }
     .sheet-option-check {
       font-size: 0.9rem;
@@ -298,7 +304,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Newspaper Archive 2026 Relaunch Priority Survey</h1>
+    <h1>Priority Survey</h1>
     <p class="subheading">
       Drag each item into one of the three categories: High, Medium, or Low priority.
       Each category must contain exactly <strong>5</strong> items.
@@ -478,7 +484,8 @@
 
     function updateBucketCounters() {
       ["high", "medium", "low"].forEach((bucketId) => {
-        const { wrapper, itemsContainer, counter } = getBucketElements(bucketId);
+        const { wrapper } = getBucketElements(bucketId);
+        const counter = document.querySelector(`[data-counter="${bucketId}"]`);
         const count = buckets[bucketId].length;
         const remaining = MAX_PER_BUCKET - count;
         counter.textContent = `${count}/${MAX_PER_BUCKET} used · ${remaining} left`;
@@ -612,10 +619,12 @@
       });
 
       prioritySheetBackdrop.classList.add("visible");
+      document.body.classList.add("no-scroll");
     }
 
     function closePrioritySheet() {
       prioritySheetBackdrop.classList.remove("visible");
+      document.body.classList.remove("no-scroll");
       activeConceptId = null;
     }
 
